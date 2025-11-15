@@ -1,0 +1,9 @@
+id,image_path,audio_path,option_a,option_b,option_c,option_d,answer
+1,assets/images/image1.jpg,assets/audio/audio1.mp3,JUMBO,ADIT & JARWO,Syifa,Pragos,A
+2,assets/images/image2.jpg,assets/audio/audio2.mp3,Roman Polankis,Pirates of the caribbean,Cuthroat Island,The Pirates,B
+3,assets/images/image3.jpg,assets/audio/audio3.mp3,Amato,Tok kasa,Boboiboy,Papazola,C
+4,assets/images/image4.jpg,assets/audio/audio4.mp3,Inception,Tenet,Interstellar,The matrix,A
+5,assets/images/image5.jpg,assets/audio/audio5.mp3,Titanic,Pearl Harbor,The Notebook,Posaiden,A
+6,assets/images/image6.jpg,assets/audio/audio6.mp3,The Ninja,Ninja Saga,Ninja Scroll,Naruto,D
+7,assets/images/image7.jpg,assets/audio/audio7.mp3,Star Trek,Guardians of the Galaxy,Star Wars,Dune,C
+8,assets/images/image8.jpg,assets/audio/audio8.mp3,Fantastic Beasts,The Lord of the Rings,The Chronicles of Narnia,Harry Potter,D
