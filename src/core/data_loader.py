@@ -1,10 +1,12 @@
 import csv
+import os
 
 # ==========================================
-# PATH ABSOLUTE KE FILE CSV (EDIT INI)
+# RESOLVE PATHS (lebih aman & fleksibel)
 # ==========================================
-QUESTIONS_CSV = r"D:\CineTune\data\questions.csv"
-GESTURES_CSV  = r"D:\CineTune\data\gestures.csv"
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../"))
+QUESTIONS_CSV = os.path.join(BASE_DIR, "data", "questions.csv")
+GESTURES_CSV  = os.path.join(BASE_DIR, "data", "gestures.csv")
 # ==========================================
 
 
@@ -16,8 +18,8 @@ def load_questions():
             for row in reader:
                 questions.append({
                     "id": int(row["id"]),
-                    "image_path": row["image_path"],
-                    "audio_path": row["audio_path"],
+                    "image": os.path.join(BASE_DIR, row["image_path"]),   # RESOLVED PATH
+                    "audio": os.path.join(BASE_DIR, row["audio_path"]),   # RESOLVED PATH
                     "options": {
                         "A": row["option_a"],
                         "B": row["option_b"],

@@ -1,7 +1,29 @@
 import cv2
-import mediapipe as mp
+from vision.gesture_detector import GestureDetector
+from vision.gesture_mapper import GestureMapper
 
-print("OpenCV version:", cv2.__version__)
-print("MediaPipe version:", mp.__version__)
+detector = GestureDetector()
+mapper = GestureMapper()
 
-print("Everything works!")
+cap = cv2.VideoCapture(0)
+
+while True:
+    ret, frame = cap.read()
+    if not ret:
+        break
+
+    frame = cv2.flip(frame, 1)
+
+    landmarks, frame = detector.detect(frame)
+    gesture = mapper.map(landmarks)
+
+    cv2.putText(frame, f"Gesture: {gesture}", (10, 40),
+                cv2.FONT_HERSHEY_SIMPLEX, 1, (0,255,0), 2)
+
+    cv2.imshow("Gesture Mapping Test", frame)
+
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+        break
+
+cap.release()
+cv2.destroyAllWindows()
