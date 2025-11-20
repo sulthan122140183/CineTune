@@ -40,9 +40,11 @@ def load_gesture_map():
             reader = csv.DictReader(f)
             for row in reader:
                 gestures[row["gesture_name"]] = row["answer"].strip().upper()
+        print("[DEBUG] Gesture map loaded:", gestures)   # <= TAMBAH INI
     except Exception as e:
         print("[ERROR] Gagal load gestures:", e)
     return gestures
+
 
 
 if __name__ == "__main__":

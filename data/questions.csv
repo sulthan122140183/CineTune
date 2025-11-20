@@ -1,6 +1,6 @@
 id,image_path,audio_path,option_a,option_b,option_c,option_d,answer
 1,assets/images/jumbo.jpg,assets/audio/jumbo.wav,JUMBO,ADIT & JARWO,Syifa,Pragos,A
-2,assets/images/piratesofcaribbean.jpg,assets/audio/piratesofcaribbean.wav,Roman Polankis,Pirates of the caribbean,Cuthroat Island,The Pirates,B
+2,assets/images/piratesofthecaribbean.jpg,assets/audio/piratesofthecaribbean.wav,Roman Polankis,Pirates of the caribbean,Cuthroat Island,The Pirates,B
 3,assets/images/boboiboy.jpg,assets/audio/boboiboy.wav,Amato,Tok kasa,Boboiboy,Papazola,C
 4,assets/images/inception.jpg,assets/audio/inception.wav,Inception,Tenet,Interstellar,The matrix,A
 5,assets/images/titanic.jpg,assets/audio/titanic.wav,Titanic,Pearl Harbor,The Notebook,Posaiden,A
