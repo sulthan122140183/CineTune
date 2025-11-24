@@ -23,7 +23,7 @@ class CineTuneApp:
         """Initialize the application"""
         # Get base directory
         self.base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        
+        self.last_question_id = None
         # Initialize pygame
         pygame.init()
         
@@ -111,6 +111,16 @@ class CineTuneApp:
         if not current_q:
             return
         
+        # === FIX AUDIO SOAL ===
+        try:
+            if self.last_question_id != current_q["id"]:
+                print(f"[AUDIO] Playing audio for question {current_q['id']}")
+                self.audio_player.play_question_audio(os.path.join(self.base_dir, current_q["audio"]))
+                self.last_question_id = current_q["id"]
+        except Exception as e:
+            print("[AUDIO ERROR]", e)
+
+
         # Get camera frame
         frame_surface, gesture, raw_frame = self.get_camera_frame()
         

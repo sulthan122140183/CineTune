@@ -19,6 +19,14 @@ class GestureMapper:
         # RULE DASAR (bisa kamu tweak nanti)
         # ------------------------------------------
 
+         # D = ✊ (semua jari turun: perbedaan kecil antar titik)
+        if (
+            abs(index_tip[1] - middle_tip[1]) < 25 and
+            abs(middle_tip[1] - ring_tip[1]) < 25 and
+            abs(ring_tip[1] - pinky_tip[1]) < 25
+        ):
+            return "D"
+        
         # A = 👍 (jempol paling atas)
         if thumb_tip[1] < index_tip[1] and thumb_tip[1] < middle_tip[1]:
             return "A"
@@ -31,12 +39,6 @@ class GestureMapper:
         if index_tip[1] < middle_tip[1] and index_tip[1] < ring_tip[1]:
             return "C"
 
-        # D = ✊ (semua jari turun: perbedaan kecil antar titik)
-        if (
-            abs(index_tip[1] - middle_tip[1]) < 25 and
-            abs(middle_tip[1] - ring_tip[1]) < 25 and
-            abs(ring_tip[1] - pinky_tip[1]) < 25
-        ):
-            return "D"
+       
 
         return None
