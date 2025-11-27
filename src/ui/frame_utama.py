@@ -60,6 +60,10 @@ class CineTuneApp:
         self.result_data = None
         self.result_timer = 0
         self.result_show_duration = 2.0  # seconds
+
+        # <<< ADDED: state untuk melacak audio pertanyaan yang sudah diputar
+        self.last_question_index_for_audio = None
+        # <<< END ADDED
         
         print("[INIT] CineTune initialized successfully!")
     
@@ -98,10 +102,16 @@ class CineTuneApp:
                 if button.collidepoint(event.pos):
                     print("[GAME] Starting game...")
                     self.game_manager.start_game()
+                    # <<< ADDED: reset penanda audio saat mulai game baru
+                    self.last_question_index_for_audio = None
+                    # <<< END ADDED
                     self.ui.state = GameState.GAME
     
     def handle_game_state(self):
         """Handle game state"""
+        # <<< TIMER-ADD: update timer 10 detik per soal >>>
+        self.game_manager.update_timer(self.audio_player)
+        # <<< END TIMER-ADD >>>
         if self.game_manager.is_game_over():
             self.ui.state = GameState.GAME_OVER
             return
@@ -110,17 +120,18 @@ class CineTuneApp:
         current_q = self.game_manager.get_current_question()
         if not current_q:
             return
+
+        # <<< ADDED: putar audio pertanyaan hanya sekali per question
+        current_index = self.game_manager.current_question_idx
+        if current_index != self.last_question_index_for_audio:
+            audio_path = current_q.get("audio")
+            if audio_path:
+                print(f"[AUDIO] Play question audio: {audio_path}")
+                self.audio_player.stop()  # hentikan audio sebelumnya
+                self.audio_player.play_question_audio(audio_path)
+            self.last_question_index_for_audio = current_index
+        # <<< END ADDED
         
-        # === FIX AUDIO SOAL ===
-        try:
-            if self.last_question_id != current_q["id"]:
-                print(f"[AUDIO] Playing audio for question {current_q['id']}")
-                self.audio_player.play_question_audio(os.path.join(self.base_dir, current_q["audio"]))
-                self.last_question_id = current_q["id"]
-        except Exception as e:
-            print("[AUDIO ERROR]", e)
-
-
         # Get camera frame
         frame_surface, gesture, raw_frame = self.get_camera_frame()
         
@@ -181,8 +192,12 @@ class CineTuneApp:
         result = self.game_manager.submit_answer(gesture_answer)
         if result:
             print(f"[RESULT] {result}")
-            
-            # Play audio feedback
+
+            # <<< TIMER-IMPORTANT: stop audio soal dulu >>>
+            self.audio_player.stop()
+            # <<< END ADDED >>>
+
+            # Play audio feedback (correct / wrong)
             if result["is_correct"]:
                 self.audio_player.play_correct_sound(self.base_dir)
             else:
@@ -192,6 +207,7 @@ class CineTuneApp:
             self.result_data = result
             self.result_timer = 0
             self.ui.state = GameState.RESULT
+
     
     def handle_result_state(self):
         """Handle result state"""

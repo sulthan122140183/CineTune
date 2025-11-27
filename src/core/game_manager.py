@@ -1,6 +1,7 @@
 import random
 import os
 from enum import Enum
+import time  # [TIMER-ADD] dipakai untuk menghitung durasi per soal
 
 # ==========================================
 # GAME STATE ENUM
@@ -35,6 +36,10 @@ class GameManager:
         self.answered_count = 0
         self.phase = GamePhase.IDLE
         
+        # [TIMER-ADD] konfigurasi timer per soal
+        self.question_duration = 10.0  # detik per soal
+        self.current_question_start_time = None  # waktu mulai soal aktif
+        
         # Shuffle questions
         if self.questions:
             random.shuffle(self.questions)
@@ -45,6 +50,9 @@ class GameManager:
         self.score = 0
         self.answered_count = 0
         self.phase = GamePhase.WAITING_ANSWER
+
+        # [TIMER-ADD] mulai timer untuk soal pertama
+        self.current_question_start_time = time.time()
     
     def get_current_question(self):
         """Get current question"""
@@ -105,6 +113,8 @@ class GameManager:
             self.phase = GamePhase.GAME_OVER
         else:
             self.phase = GamePhase.WAITING_ANSWER
+            # [TIMER-ADD] reset timer untuk soal baru
+            self.current_question_start_time = time.time()
     
     def is_game_over(self):
         """Check if game is over"""
@@ -133,6 +143,45 @@ class GameManager:
     def reset(self):
         """Reset game"""
         self.__init__(self.questions)
+
+    # ==========================================================
+    # [TIMER-ADD] FUNGSI BARU: update_timer
+    # ==========================================================
+    def update_timer(self, audio_player=None):
+        """
+        Update timer soal.
+        - Dipanggil terus di main-loop (setiap frame).
+        - Kalau waktu >= question_duration:
+            -> hitung sebagai satu soal yang sudah lewat
+            -> (opsional) stop audio pertanyaan
+            -> langsung pindah ke soal berikutnya.
+        
+        Args:
+            audio_player: instance AudioPlayer (boleh None)
+        """
+        # hanya jalan kalau masih menunggu jawaban
+        if self.phase != GamePhase.WAITING_ANSWER:
+            return
+        
+        # tidak ada soal aktif / game sudah selesai
+        if self.current_question_start_time is None or self.is_game_over():
+            return
+        
+        elapsed = time.time() - self.current_question_start_time
+        
+        if elapsed >= self.question_duration:
+            # waktu habis untuk soal ini
+            self.answered_count += 1  # dihitung sebagai soal yang telah dilewati
+
+            # hentikan audio soal kalau audio_player diberikan
+            if audio_player is not None:
+                try:
+                    audio_player.stop()
+                except Exception:
+                    pass
+            
+            # langsung ke soal berikutnya
+            self.next_question()
 
 
 if __name__ == "__main__":
