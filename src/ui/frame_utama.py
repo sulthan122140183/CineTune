@@ -105,6 +105,11 @@ class CineTuneApp:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.running = False
+            elif event.type == pygame.VIDEORESIZE:
+                # Handle window resize
+                self.ui.width, self.ui.height = event.size
+                self.ui.screen = pygame.display.set_mode((self.ui.width, self.ui.height), pygame.RESIZABLE)
+                self.ui._update_fonts()  # Update fonts for new resolution
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if button.collidepoint(event.pos):
                     print("[GAME] Starting game...")
@@ -166,6 +171,11 @@ class CineTuneApp:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.running = False
+            elif event.type == pygame.VIDEORESIZE:
+                # Handle window resize
+                self.ui.width, self.ui.height = event.size
+                self.ui.screen = pygame.display.set_mode((self.ui.width, self.ui.height), pygame.RESIZABLE)
+                self.ui._update_fonts()  # Update fonts for new resolution
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
                     self.running = False
@@ -240,6 +250,11 @@ class CineTuneApp:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.running = False
+            elif event.type == pygame.VIDEORESIZE:
+                # Handle window resize
+                self.ui.width, self.ui.height = event.size
+                self.ui.screen = pygame.display.set_mode((self.ui.width, self.ui.height), pygame.RESIZABLE)
+                self.ui._update_fonts()  # Update fonts for new resolution
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if button.collidepoint(event.pos):
                     print("[GAME] Moving to next question...")
@@ -276,6 +291,11 @@ class CineTuneApp:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.running = False
+            elif event.type == pygame.VIDEORESIZE:
+                # Handle window resize
+                self.ui.width, self.ui.height = event.size
+                self.ui.screen = pygame.display.set_mode((self.ui.width, self.ui.height), pygame.RESIZABLE)
+                self.ui._update_fonts()  # Update fonts for new resolution
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if retry_btn.collidepoint(event.pos):
                     print("[GAME] Retry game from start...")

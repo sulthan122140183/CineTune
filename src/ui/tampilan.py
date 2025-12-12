@@ -101,7 +101,7 @@ def scale_preserve_aspect_ratio(surface, target_width, target_height, bg_color=(
 # UI CLASS
 # ==========================================
 class GameUI:
-    def __init__(self, width=540, height=960):
+    def __init__(self, width=480, height=640):
         # Initialize pygame if not already initialized
         if not pygame.get_init():
             pygame.init()
@@ -112,19 +112,15 @@ class GameUI:
         
         self.width = width
         self.height = height
-        self.screen = pygame.display.set_mode((width, height))
+        # Use windowed mode (not fullscreen) to avoid clipping on smaller screens
+        self.screen = pygame.display.set_mode((width, height), pygame.RESIZABLE)
         pygame.display.set_caption("CineTune - Tebak Film Lewat Gesture")
         
-        # Fonts (dikecilkan agar pas di layar 540x960 dan konsisten)
-        self.font_large = pygame.font.Font(None, 56)
-        self.font_medium = pygame.font.Font(None, 38)
-        self.font_small = pygame.font.Font(None, 22)
-        self.font_tiny = pygame.font.Font(None, 16)
+        # Update fonts based on resolution (responsive)
+        self._update_fonts()
         
         # Clock
         self.clock = pygame.time.Clock()
-        
-        # Current state
         self.state = GameState.MENU
         # Animation / transition helpers
         self._last_state = self.state
@@ -145,32 +141,65 @@ class GameUI:
         self._particle_rate_ms = 999999
         self._decor_phase = 0.0
         self._fade_alpha = 0
+    
+    def _update_fonts(self):
+        """Update font sizes based on screen resolution (responsive design)"""
+        # Calculate font sizes based on screen width (relative to base resolution 480px)
+        base_width = 480
+        width_ratio = self.width / base_width
+        
+        # Font sizes scale proportionally with width
+        self.font_large = pygame.font.Font(None, max(28, int(40 * width_ratio)))
+        self.font_medium = pygame.font.Font(None, max(22, int(28 * width_ratio)))
+        self.font_small = pygame.font.Font(None, max(14, int(18 * width_ratio)))
+        self.font_tiny = pygame.font.Font(None, max(12, int(14 * width_ratio)))
+    
+    def get_responsive_size(self, base_size):
+        """Get a responsive size based on screen width"""
+        base_width = 480
+        width_ratio = self.width / base_width
+        return int(base_size * width_ratio)
+    
+    def get_responsive_padding(self):
+        """Get responsive padding value"""
+        return max(8, self.get_responsive_size(12))
+    
+    def get_responsive_margin(self):
+        """Get responsive margin value"""
+        return max(12, self.get_responsive_size(16))
         
     def draw_menu(self):
         """Draw main menu screen with animated gradient + neon title + styled start button"""
         # Flat elegant background
         self.screen.fill(self.bg_dark)
-        # Title
+        
+        # Responsive padding & margins
+        padding = self.get_responsive_padding()
+        margin = self.get_responsive_margin()
+        
+        # Title - positioned responsively
+        title_y = int(self.height * 0.15)
         title_s = self.font_large.render("CineTune", True, self.accent_cyan)
-        self.screen.blit(title_s, (self.width // 2 - title_s.get_width() // 2, 170))
+        self.screen.blit(title_s, (self.width // 2 - title_s.get_width() // 2, title_y))
+        
         # Subtitle
+        subtitle_y = title_y + title_s.get_height() + padding
         subtitle = self.font_small.render("Tebak Gestur & Film", True, self.accent_gray)
         subtitle_x = self.width // 2 - subtitle.get_width() // 2
-        subtitle_y = 212
         self.screen.blit(subtitle, (subtitle_x, subtitle_y))
 
-        # Start button diposisikan di tengah antara subtitle dan kartu petunjuk
-        btn_w = 220
-        btn_h = 56
+        # Start button - responsive size
+        btn_w = int(self.width * 0.5)
+        btn_h = self.get_responsive_size(48)
         btn_x = self.width // 2 - btn_w // 2
-        margin = 28
-        btn_y = subtitle_y + subtitle.get_height() + margin
+        btn_y = subtitle_y + subtitle.get_height() + margin + margin
         start_button = pygame.Rect(btn_x, btn_y, btn_w, btn_h)
+        
         # Elegant button: soft shadow, rounded, muted accent
         shadow_surf = pygame.Surface((btn_w, btn_h), pygame.SRCALPHA)
-        pygame.draw.rect(shadow_surf, self.shadow, shadow_surf.get_rect(), border_radius=20)
+        pygame.draw.rect(shadow_surf, self.shadow, shadow_surf.get_rect(), border_radius=int(btn_h * 0.4))
         self.screen.blit(shadow_surf, (btn_x + 2, btn_y + 6))
-        pygame.draw.rect(self.screen, self.accent_cyan, start_button, border_radius=20)
+        pygame.draw.rect(self.screen, self.accent_cyan, start_button, border_radius=int(btn_h * 0.4))
         btn_text = self.font_medium.render("Mulai", True, Colors.WHITE)
         self.screen.blit(btn_text, (btn_x + btn_w // 2 - btn_text.get_width() // 2, btn_y + btn_h // 2 - btn_text.get_height() // 2))
 
@@ -182,44 +211,56 @@ class GameUI:
             {"icon": "✊", "name": "Fist", "key": "D", "desc": "Genggaman - Pilih opsi D"},
         ]
 
-        # Layout vertikal satu kolom di tengah bawah tombol
-        card_w = int(self.width * 0.88)
-        card_h = 78
-        gap = 12
+        # Layout vertikal satu kolom di tengah bawah tombol - responsive
+        card_w = int(self.width * 0.85)
+        card_h = self.get_responsive_size(64)
+        gap = padding + 4
         gx = (self.width - card_w) // 2
-        gy = btn_y + btn_h + 28
+        gy = btn_y + btn_h + margin
+        
         for i, gesture in enumerate(gestures):
             x = gx
             y = gy + i * (card_h + gap)
+            
+            # Skip rendering if card would go off-screen
+            if y + card_h > self.height - padding:
+                continue
+                
             card_rect = pygame.Rect(x, y, card_w, card_h)
             # Card shadow
             card_shadow = pygame.Surface((card_w, card_h), pygame.SRCALPHA)
-            pygame.draw.rect(card_shadow, self.shadow, card_shadow.get_rect(), border_radius=16)
-            self.screen.blit(card_shadow, (x + 2, y + 8))
+            pygame.draw.rect(card_shadow, self.shadow, card_shadow.get_rect(), border_radius=int(card_h * 0.25))
+            self.screen.blit(card_shadow, (x + 2, y + 6))
             # Card background
-            pygame.draw.rect(self.screen, self.card_bg, card_rect, border_radius=16)
-            pygame.draw.rect(self.screen, self.card_border, card_rect, 1, border_radius=16)
+            pygame.draw.rect(self.screen, self.card_bg, card_rect, border_radius=int(card_h * 0.25))
+            pygame.draw.rect(self.screen, self.card_border, card_rect, 1, border_radius=int(card_h * 0.25))
+            
             # Icon
             icon_s = self.font_medium.render(gesture["icon"], True, self.accent_cyan)
-            self.screen.blit(icon_s, (card_rect.x + 18, card_rect.y + (card_rect.height - icon_s.get_height()) // 2))
+            icon_x = card_rect.x + int(card_w * 0.08)
+            icon_y = card_rect.y + (card_rect.height - icon_s.get_height()) // 2
+            self.screen.blit(icon_s, (icon_x, icon_y))
+            
             # Name
             name_s = self.font_small.render(f"{gesture['name']} ({gesture['key']})", True, Colors.WHITE)
-            self.screen.blit(name_s, (card_rect.x + 78, card_rect.y + 14))
+            name_x = card_rect.x + int(card_w * 0.18)
+            name_y = card_rect.y + padding
+            self.screen.blit(name_s, (name_x, name_y))
+            
             # Description
             desc_s = self.font_tiny.render(gesture['desc'], True, self.accent_gray)
-            self.screen.blit(desc_s, (card_rect.x + 78, card_rect.y + 40))
-        # All broken/unused code below this block is removed for clarity and correctness
+            desc_x = card_rect.x + int(card_w * 0.18)
+            desc_y = name_y + name_s.get_height() + 2
+            self.screen.blit(desc_s, (desc_x, desc_y))
 
         pygame.display.flip()
         return start_button
     
     def draw_game(self, question_num, total_questions, image_surface, options, current_gesture=None, gesture_confidence=0, camera_frame=None):
-        """Draw game screen in a TikTok-like style:
-        - camera_frame as full background (maintain aspect ratio, no stretch)
-        - translucent top panel with question/thumbnail
-        - bottom semi-transparent option cards
-        - floating gesture pill on right
-        """
+        """Draw game screen in a TikTok-like style with responsive layout"""
+        padding = self.get_responsive_padding()
+        margin = self.get_responsive_margin()
+        
         # Background: camera preview fill (if available), fallback ke tema gelap menu
         if camera_frame:
             try:
@@ -231,67 +272,66 @@ class GameUI:
         else:
             self.screen.fill(self.bg_dark)
 
-        # Draw film image at the absolute top center, larger and with border
-        # dan simpan posisi bawah gambar untuk referensi panel
-        img_bottom = 40  # default kalau tidak ada image
+        # Draw film image - responsive sizing
+        img_bottom = int(self.height * 0.08)
         if image_surface:
             img_rect = image_surface.get_rect()
-            max_w, max_h = self.width // 2, 180
+            max_w = int(self.width * 0.35)
+            max_h = int(self.height * 0.25)
             scale = min(max_w / img_rect.width, max_h / img_rect.height, 1.0)
             img_size = (int(img_rect.width * scale), int(img_rect.height * scale))
             img_surf = pygame.transform.scale(image_surface, img_size)
             img_x = (self.width - img_size[0]) // 2
-            img_y = 96  # geser lebih ke bawah agar blok konten mendekati tengah
+            img_y = int(self.height * 0.08)
             border_rect = pygame.Rect(img_x-6, img_y-6, img_size[0]+12, img_size[1]+12)
-            pygame.draw.rect(self.screen, self.accent_cyan, border_rect, 4, border_radius=16)
+            pygame.draw.rect(self.screen, self.accent_cyan, border_rect, 3, border_radius=int(img_size[0] * 0.1))
             self.screen.blit(img_surf, (img_x, img_y))
-            img_bottom = img_y + img_size[1] + 10
+            img_bottom = img_y + img_size[1] + padding
 
-        # Draw top panel sedikit lebih turun; seluruh blok gambar+panel digeser ke bawah
-        panel_h = 70
-        panel_y = img_bottom + 40
-        panel_w = int(self.width * 0.75)  # panel lebih pendek, lebih minimalis
+        # Draw top panel - responsive
+        panel_h = self.get_responsive_size(56)
+        panel_y = img_bottom + margin
+        panel_w = int(self.width * 0.75)
         panel_x = (self.width - panel_w) // 2
         panel_rect = pygame.Rect(panel_x, panel_y, panel_w, panel_h)
         panel_surf = pygame.Surface((panel_rect.width, panel_rect.height), pygame.SRCALPHA)
         panel_surf.fill(self.bg_panel + (220,))
-        pygame.draw.rect(panel_surf, self.card_border, panel_surf.get_rect(), 1, border_radius=18)
+        pygame.draw.rect(panel_surf, self.card_border, panel_surf.get_rect(), 1, border_radius=int(panel_h * 0.35))
+        
         # Question info di tengah panel
         q_text = f"Soal {question_num}/{total_questions}"
-        q_surf = self.font_large.render(q_text, True, self.accent_cyan)
+        q_surf = self.font_medium.render(q_text, True, self.accent_cyan)
         q_x = panel_rect.width // 2 - q_surf.get_width() // 2
         q_y = panel_rect.height // 2 - q_surf.get_height() // 2
         panel_surf.blit(q_surf, (q_x, q_y))
         self.screen.blit(panel_surf, (panel_rect.x, panel_rect.y))
+        
         now = pygame.time.get_ticks()
         if self.state != self._last_state:
             self._state_change_time = now
             self._last_state = self.state
-        # Define card layout variables untuk opsi, disusun agar memanfaatkan ruang kosong
-        card_w = int(self.width * 0.72)  # lebar kartu opsi
-        card_h = 56
-        gap = 8
-        base_start_y = panel_rect.bottom + 24
+        
+        # Define card layout variables untuk opsi - responsive
+        card_w = int(self.width * 0.8)
+        card_h = self.get_responsive_size(48)
+        gap = padding
+        base_start_y = panel_rect.bottom + margin
 
         raw_progress = min(1.0, (now - self._state_change_time) / 550.0)
-        # ease-out cubic for smoother feel
         anim_progress = 1 - pow(1 - raw_progress, 3)
-        slide_offset = int((1.0 - anim_progress) * 140)  # cards start lower and slide up
+        slide_offset = int((1.0 - anim_progress) * 140)
 
-        # Hitung tinggi total stack card dan posisikan di tengah ruang antara panel dan bawah layar
+        # Hitung tinggi total stack card
         total_cards_h = len(options) * card_h + (len(options) - 1) * gap
-        max_bottom = self.height - 40
+        max_bottom = self.height - padding
 
-        # ruang vertikal yang tersedia di bawah panel
         available_space = max_bottom - panel_rect.bottom
-        # ideal_start: center-kan stack kartu di ruang available_space
-        ideal_offset = max(16, (available_space - total_cards_h) // 2)
+        ideal_offset = max(int(margin * 1.5), (available_space - total_cards_h) // 2)
         start_y = panel_rect.bottom + ideal_offset
 
-        # kalau masih overflow (misalnya pada layar sangat pendek), geser sedikit ke atas
         if start_y + total_cards_h > max_bottom:
             overflow = (start_y + total_cards_h) - max_bottom
-            start_y = max(panel_rect.bottom + 16, start_y - overflow // 2)
+            start_y = max(panel_rect.bottom + int(margin * 1.5), start_y - overflow // 2)
 
         option_buttons = {}
         for idx, (key, text) in enumerate(options.items()):
@@ -299,16 +339,20 @@ class GameUI:
             card_x = (self.width - card_w) // 2
             card_rect = pygame.Rect(card_x, y, card_w, card_h)
 
-            # Simple card tanpa shadow/box berlapis
-            pygame.draw.rect(self.screen, self.card_bg, card_rect, border_radius=16)
-            pygame.draw.rect(self.screen, self.card_border, card_rect, 1, border_radius=16)
+            # Simple card
+            pygame.draw.rect(self.screen, self.card_bg, card_rect, border_radius=int(card_h * 0.3))
+            pygame.draw.rect(self.screen, self.card_border, card_rect, 1, border_radius=int(card_h * 0.3))
 
             # Option text: left side large key, then option text
-            key_surf = self.font_large.render(key, True, Colors.WHITE)
-            self.screen.blit(key_surf, (card_rect.x + 36, card_rect.y + (card_h - key_surf.get_height()) // 2))
+            key_surf = self.font_medium.render(key, True, Colors.WHITE)
+            key_x = card_rect.x + int(card_w * 0.08)
+            key_y = card_rect.y + (card_h - key_surf.get_height()) // 2
+            self.screen.blit(key_surf, (key_x, key_y))
 
             txt_surf = self.font_small.render(text, True, Colors.LIGHT_GRAY)
-            self.screen.blit(txt_surf, (card_rect.x + 130, card_rect.y + (card_h - txt_surf.get_height()) // 2))
+            txt_x = card_rect.x + int(card_w * 0.28)
+            txt_y = card_rect.y + (card_h - txt_surf.get_height()) // 2
+            self.screen.blit(txt_surf, (txt_x, txt_y))
 
             option_buttons[key] = card_rect
 
@@ -401,9 +445,11 @@ class GameUI:
         self.screen.blit(clap, (self.width - 72, right_y))
     
     def draw_result(self, is_correct, answer_key, correct_answer, feedback_text=""):
-        """Draw result screen after answering"""
-        # Gunakan tema background gelap yang sama dengan menu
+        """Draw result screen after answering - responsive"""
         self.screen.fill(self.bg_dark)
+        
+        padding = self.get_responsive_padding()
+        margin = self.get_responsive_margin()
         
         if is_correct:
             result_color = Colors.GREEN
@@ -412,80 +458,99 @@ class GameUI:
             result_color = Colors.RED
             result_text = "✗ SALAH!"
         
-        # Result title
-        result_rect = pygame.Rect(0, 150, self.width, 100)
-        draw_text(self.screen, result_text, self.font_large, result_color, result_rect)
+        # Result title - responsive positioning
+        result_y = int(self.height * 0.12)
+        result_surface = self.font_large.render(result_text, True, result_color)
+        result_x = self.width // 2 - result_surface.get_width() // 2
+        self.screen.blit(result_surface, (result_x, result_y))
         
         # Feedback
+        feedback_y = result_y + result_surface.get_height() + margin
         if feedback_text:
-            feedback_surface = self.font_small.render(feedback_text, True, Colors.LIGHT_GRAY)
-            feedback_rect = feedback_surface.get_rect(center=(self.width // 2, 300))
-            self.screen.blit(feedback_surface, feedback_rect)
+            feedback_surface = self.font_medium.render(feedback_text, True, Colors.LIGHT_GRAY)
+            feedback_x = self.width // 2 - feedback_surface.get_width() // 2
+            self.screen.blit(feedback_surface, (feedback_x, feedback_y))
         
         # Show correct answer
+        correct_y = feedback_y + self.get_responsive_size(40) + margin
         correct_text = f"Jawaban Benar: {correct_answer}"
         correct_surface = self.font_medium.render(correct_text, True, Colors.YELLOW)
-        correct_rect = correct_surface.get_rect(center=(self.width // 2, 400))
-        self.screen.blit(correct_surface, correct_rect)
+        correct_x = self.width // 2 - correct_surface.get_width() // 2
+        self.screen.blit(correct_surface, (correct_x, correct_y))
         
-        # Continue button (accent)
-        continue_button = pygame.Rect(self.width // 2 - 150, 550, 300, 70)
-        # custom styled button
-        cb_surf = pygame.Surface((continue_button.width, continue_button.height), pygame.SRCALPHA)
-        pygame.draw.rect(cb_surf, self.accent_cyan + (220,), cb_surf.get_rect(), border_radius=14)
-        pygame.draw.rect(cb_surf, (255,255,255,18), cb_surf.get_rect(), width=2, border_radius=14)
-        self.screen.blit(cb_surf, (continue_button.x, continue_button.y))
+        # Continue button - responsive
+        btn_w = int(self.width * 0.7)
+        btn_h = self.get_responsive_size(48)
+        btn_x = self.width // 2 - btn_w // 2
+        btn_y = correct_y + self.get_responsive_size(60)
+        continue_button = pygame.Rect(btn_x, btn_y, btn_w, btn_h)
+        
+        # Custom styled button
+        cb_surf = pygame.Surface((btn_w, btn_h), pygame.SRCALPHA)
+        pygame.draw.rect(cb_surf, self.accent_cyan + (220,), cb_surf.get_rect(), border_radius=int(btn_h * 0.3))
+        pygame.draw.rect(cb_surf, (255, 255, 255, 18), cb_surf.get_rect(), width=2, border_radius=int(btn_h * 0.3))
+        self.screen.blit(cb_surf, (btn_x, btn_y))
         label = self.font_medium.render("LANJUT", True, Colors.WHITE)
-        self.screen.blit(label, (continue_button.x + (continue_button.width - label.get_width())//2,
-                     continue_button.y + (continue_button.height - label.get_height())//2))
+        label_x = btn_x + (btn_w - label.get_width()) // 2
+        label_y = btn_y + (btn_h - label.get_height()) // 2
+        self.screen.blit(label, (label_x, label_y))
         
         pygame.display.flip()
         return continue_button
     
     def draw_game_over(self, score, total_questions, correct_answers):
-        """Draw game over screen"""
-        # Elegant flat background
+        """Draw game over screen - responsive"""
         self.screen.fill(self.bg_dark)
 
-        # Center score card
-        card_w, card_h = int(self.width * 0.9), 260
+        padding = self.get_responsive_padding()
+        margin = self.get_responsive_margin()
+        
+        # Center score card - responsive
+        card_w = int(self.width * 0.85)
+        card_h = int(self.height * 0.45)
         card_x = (self.width - card_w) // 2
 
-        # Hitung posisi vertikal blok (card + tombol) agar lebih proporsional
-        btn_w, btn_h = int(self.width * 0.6), 56
-        spacing = 18
-        total_block_h = card_h + 24 + btn_h * 2 + spacing
-        card_y = (self.height - total_block_h) // 2
+        # Responsive button sizing
+        btn_w = int(self.width * 0.65)
+        btn_h = self.get_responsive_size(44)
+        btn_spacing = padding + 4
+        
+        # Calculate vertical layout
+        total_block_h = card_h + margin + btn_h * 2 + btn_spacing
+        card_y = max(margin, (self.height - total_block_h) // 2)
+        
         card = pygame.Surface((card_w, card_h), pygame.SRCALPHA)
         card.fill(self.bg_panel + (230,))
-        pygame.draw.rect(card, self.card_border, card.get_rect(), border_radius=20)
+        pygame.draw.rect(card, self.card_border, card.get_rect(), border_radius=int(card_h * 0.08))
 
-        # Large percentage (centered at top)
+        # Large percentage - responsive font
         percentage = (correct_answers / total_questions * 100) if total_questions > 0 else 0
         perc_text = f"{percentage:.0f}%"
-        perc_font = pygame.font.Font(None, 96)
+        perc_font_size = self.get_responsive_size(72)
+        perc_font = pygame.font.Font(None, perc_font_size)
         perc_surf = perc_font.render(perc_text, True, self.accent_cyan)
         perc_x = (card_w - perc_surf.get_width()) // 2
-        perc_y = 22
+        perc_y = int(card_h * 0.08)
         card.blit(perc_surf, (perc_x, perc_y))
 
         # Title under percentage
         title_s = self.font_large.render("Game Selesai", True, Colors.WHITE)
         title_x = (card_w - title_s.get_width()) // 2
-        title_y = perc_y + perc_surf.get_height() + 8
+        title_y = perc_y + perc_surf.get_height() + padding
         card.blit(title_s, (title_x, title_y))
 
         # Score details
         score_text = f"Skor: {score} / {total_questions}"
         score_s = self.font_medium.render(score_text, True, Colors.LIGHT_GRAY)
         score_x = (card_w - score_s.get_width()) // 2
-        score_y = title_y + title_s.get_height() + 12
+        score_y = title_y + title_s.get_height() + padding
         card.blit(score_s, (score_x, score_y))
 
+        # Correct answers text
         correct_text = f"Jawaban Benar: {correct_answers}"
         corr_s = self.font_small.render(correct_text, True, Colors.LIGHT_GRAY)
         corr_x = (card_w - corr_s.get_width()) // 2
-        corr_y = score_y + score_s.get_height() + 6
+        corr_y = score_y + score_s.get_height() + padding
         card.blit(corr_s, (corr_x, corr_y))
 
         # Message / badge
@@ -501,36 +566,39 @@ class GameUI:
 
         msg_s = self.font_medium.render(message, True, badge_col)
         msg_x = (card_w - msg_s.get_width()) // 2
-        msg_y = corr_y + corr_s.get_height() + 10
+        msg_y = corr_y + corr_s.get_height() + padding
         card.blit(msg_s, (msg_x, msg_y))
 
         # Draw card to screen
         self.screen.blit(card, (card_x, card_y))
 
-        # Action buttons under card (dua tombol vertikal di tengah)
+        # Action buttons under card - responsive
         bx = (self.width - btn_w) // 2
-        by = card_y + card_h + 24
+        by = card_y + card_h + margin
 
         # Retry button (atas)
         retry_btn = pygame.Rect(bx, by, btn_w, btn_h)
         retry_s = pygame.Surface((btn_w, btn_h), pygame.SRCALPHA)
-        pygame.draw.rect(retry_s, (34, 34, 34, 220), retry_s.get_rect(), border_radius=14)
-        pygame.draw.rect(retry_s, (255,255,255,18), retry_s.get_rect(), width=2, border_radius=14)
+        pygame.draw.rect(retry_s, (34, 34, 34, 220), retry_s.get_rect(), border_radius=int(btn_h * 0.3))
+        pygame.draw.rect(retry_s, (255, 255, 255, 18), retry_s.get_rect(), width=2, border_radius=int(btn_h * 0.3))
         self.screen.blit(retry_s, (retry_btn.x, retry_btn.y))
         r_label = self.font_medium.render("ULANGI", True, Colors.WHITE)
-        self.screen.blit(r_label, (retry_btn.x + (btn_w - r_label.get_width())//2, retry_btn.y + (btn_h - r_label.get_height())//2))
+        r_label_x = retry_btn.x + (btn_w - r_label.get_width()) // 2
+        r_label_y = retry_btn.y + (btn_h - r_label.get_height()) // 2
+        self.screen.blit(r_label, (r_label_x, r_label_y))
 
         # Menu button (bawah)
-        menu_btn = pygame.Rect(bx, by + btn_h + spacing, btn_w, btn_h)
+        menu_btn = pygame.Rect(bx, by + btn_h + btn_spacing, btn_w, btn_h)
         menu_s = pygame.Surface((btn_w, btn_h), pygame.SRCALPHA)
-        pygame.draw.rect(menu_s, self.accent_pink + (220,), menu_s.get_rect(), border_radius=14)
-        pygame.draw.rect(menu_s, (255,255,255,18), menu_s.get_rect(), width=2, border_radius=14)
+        pygame.draw.rect(menu_s, self.accent_pink + (220,), menu_s.get_rect(), border_radius=int(btn_h * 0.3))
+        pygame.draw.rect(menu_s, (255, 255, 255, 18), menu_s.get_rect(), width=2, border_radius=int(btn_h * 0.3))
         self.screen.blit(menu_s, (menu_btn.x, menu_btn.y))
-        m_label = self.font_medium.render("KEMBALI KE MENU", True, Colors.WHITE)
-        self.screen.blit(m_label, (menu_btn.x + (btn_w - m_label.get_width())//2, menu_btn.y + (btn_h - m_label.get_height())//2))
+        m_label = self.font_small.render("KEMBALI KE MENU", True, Colors.WHITE)
+        m_label_x = menu_btn.x + (btn_w - m_label.get_width()) // 2
+        m_label_y = menu_btn.y + (btn_h - m_label.get_height()) // 2
+        self.screen.blit(m_label, (m_label_x, m_label_y))
 
         pygame.display.flip()
-        # Return both buttons so caller can handle clicks
         return retry_btn, menu_btn
     
     def draw_camera_preview(self, frame_surface, x=0, y=100):
@@ -541,9 +609,15 @@ class GameUI:
             pygame.draw.rect(self.screen, self.accent_cyan, 
                            (x, y, frame_surface.get_width(), frame_surface.get_height()), 3)
     
-    def load_image(self, image_path, max_width=400, max_height=400):
-        """Load and scale image for display"""
+    def load_image(self, image_path, max_width=None, max_height=None):
+        """Load and scale image for display - responsive sizing"""
         try:
+            # Use responsive defaults if not specified
+            if max_width is None:
+                max_width = int(self.width * 0.35)
+            if max_height is None:
+                max_height = int(self.height * 0.25)
+            
             img = pygame.image.load(image_path)
             img.set_colorkey(Colors.BLACK)  # Remove black background if any
             
