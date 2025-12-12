@@ -46,6 +46,57 @@ def draw_button(surface, text, rect, font, bg_color, text_color, hover=False):
     pygame.draw.rect(surface, text_color, rect, 3, border_radius=10)
     draw_text(surface, text, font, text_color, rect)
 
+def scale_preserve_aspect_ratio(surface, target_width, target_height, bg_color=(0, 0, 0)):
+    """
+    Scale surface sambil maintain aspect ratio (letterboxing)
+    
+    Args:
+        surface: pygame surface dari kamera
+        target_width: lebar target screen
+        target_height: tinggi target screen
+        bg_color: warna background untuk letterbox
+    
+    Returns:
+        scaled surface dengan aspect ratio terjaga
+    """
+    if surface is None:
+        return None
+    
+    try:
+        # Hitung aspect ratio
+        surf_width, surf_height = surface.get_size()
+        target_aspect = target_width / target_height
+        surf_aspect = surf_width / surf_height
+        
+        # Tentukan scaling berdasarkan aspect ratio
+        if surf_aspect > target_aspect:
+            # Surface lebih lebar, scale berdasarkan height
+            new_height = target_height
+            new_width = int(target_height * surf_aspect)
+        else:
+            # Surface lebih tinggi, scale berdasarkan width
+            new_width = target_width
+            new_height = int(target_width / surf_aspect)
+        
+        # Scale surface
+        scaled = pygame.transform.scale(surface, (new_width, new_height))
+        
+        # Create background dengan letterbox
+        result = pygame.Surface((target_width, target_height))
+        result.fill(bg_color)
+        
+        # Hitung offset untuk center
+        x_offset = (target_width - new_width) // 2
+        y_offset = (target_height - new_height) // 2
+        
+        # Blit scaled surface ke center
+        result.blit(scaled, (x_offset, y_offset))
+        
+        return result
+    except Exception as e:
+        print(f"[ERROR] Scale preserve aspect ratio: {e}")
+        return surface
+
 # ==========================================
 # UI CLASS
 # ==========================================
@@ -164,7 +215,7 @@ class GameUI:
     
     def draw_game(self, question_num, total_questions, image_surface, options, current_gesture=None, gesture_confidence=0, camera_frame=None):
         """Draw game screen in a TikTok-like style:
-        - camera_frame as full background
+        - camera_frame as full background (maintain aspect ratio, no stretch)
         - translucent top panel with question/thumbnail
         - bottom semi-transparent option cards
         - floating gesture pill on right
@@ -172,7 +223,8 @@ class GameUI:
         # Background: camera preview fill (if available), fallback ke tema gelap menu
         if camera_frame:
             try:
-                bg = pygame.transform.scale(camera_frame, (self.width, self.height))
+                # Use preserve aspect ratio to avoid stretching
+                bg = scale_preserve_aspect_ratio(camera_frame, self.width, self.height, self.bg_dark)
                 self.screen.blit(bg, (0, 0))
             except Exception:
                 self.screen.fill(self.bg_dark)
