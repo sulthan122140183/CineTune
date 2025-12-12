@@ -75,21 +75,28 @@ class CineTuneApp:
         
         # Flip frame
         frame = cv2.flip(frame, 1)
-        
-        # Detect landmarks
-        landmarks, frame = self.gesture_detector.detect(frame)
-        
+        # Detect landmarks on original (non-blurred) frame so detection is accurate
+        landmarks, annotated = self.gesture_detector.detect(frame)
+
         # Map to gesture
         gesture = None
         if landmarks:
             gesture = self.gesture_mapper.map(landmarks)
-        
-        # Convert frame to pygame surface
-        frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+
+        # Prepare a blurred copy for display (soft background / filter look)
+        try:
+            display_frame = annotated.copy()
+            # Apply Gaussian blur for background aesthetic
+            display_frame = cv2.GaussianBlur(display_frame, (21, 21), 0)
+        except Exception:
+            display_frame = annotated
+
+        # Convert display frame to pygame surface
+        frame_rgb = cv2.cvtColor(display_frame, cv2.COLOR_BGR2RGB)
         frame_rgb = np.transpose(frame_rgb, (1, 0, 2))
         frame_surface = pygame.surfarray.make_surface(frame_rgb)
-        
-        return frame_surface, gesture, frame
+
+        return frame_surface, gesture, annotated
     
     def handle_menu_state(self):
         """Handle menu state"""
@@ -260,7 +267,7 @@ class CineTuneApp:
         """Handle game over state"""
         stats = self.game_manager.get_stats()
         
-        button = self.ui.draw_game_over(
+        retry_btn, menu_btn = self.ui.draw_game_over(
             score=stats["score"],
             total_questions=stats["total_questions"],
             correct_answers=stats["score"]
@@ -270,7 +277,12 @@ class CineTuneApp:
             if event.type == pygame.QUIT:
                 self.running = False
             elif event.type == pygame.MOUSEBUTTONDOWN:
-                if button.collidepoint(event.pos):
+                if retry_btn.collidepoint(event.pos):
+                    print("[GAME] Retry game from start...")
+                    self.game_manager.reset()
+                    self.game_manager.start_game()
+                    self.ui.state = GameState.GAME
+                elif menu_btn.collidepoint(event.pos):
                     print("[GAME] Returning to menu...")
                     self.game_manager.reset()
                     self.ui.state = GameState.MENU
