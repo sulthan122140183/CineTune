@@ -143,4 +143,4 @@ Proyek ini disusun dan dikembangkan oleh:
 | Ihya Razky Hidayat | 122140167 |
 
 ---
-*Proyek ini dibuat untuk memenuhi Tugas Besar Mata Kuliah Sistem Teknologi Multimedia (IF25-40305), Semester 6.*
+*Proyek ini dibuat untuk memenuhi Tugas Besar Mata Kuliah Sistem Teknologi Multimedia (IF25-40305), Semester 7.*
